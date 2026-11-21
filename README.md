@@ -50,7 +50,7 @@ The agent only taps what is actually visible. Elements hidden behind iOS 26 floa
 You need macOS with Xcode 15 or later, Python 3.12+, and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/parvej-flight/lunatap.git && cd lunatap
+git clone https://github.com/Parvez2017/lunatap.git && cd lunatap
 uv sync --dev
 bash scripts/setup_ios_env.sh               # checks Xcode, simulators and paired devices
 bash scripts/setup_ios_wda_simulator.sh     # Xcode 15–26 only: builds WebDriverAgent once
@@ -299,7 +299,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as desc
 - Better map markers: tell icons from pins on grey markers, and read clusters' own count badges.
 - Visual diffs between builds: flag screens that changed since the last good run.
 
-Ideas and pull requests are welcome. Open an [issue](https://github.com/parvej-flight/lunatap/issues).
+Ideas and pull requests are welcome. Open an [issue](https://github.com/Parvez2017/lunatap/issues).
 
 ## Credits
 

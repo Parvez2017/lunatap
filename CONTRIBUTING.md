@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing. Bug reports, feature ideas, documentation and code are all welcome.
 
-- **Bugs and ideas**: open an [issue](https://github.com/parvej-flight/lunatap/issues).
+- **Bugs and ideas**: open an [issue](https://github.com/Parvez2017/lunatap/issues).
 - **Pull requests**:
   1. Fork the repository and create a branch (`git checkout -b feat/my-feature`).
   2. Make your changes and run `make test`, `make lint` and `make typecheck`.
