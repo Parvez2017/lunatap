@@ -1,0 +1,21 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "include": [
+    "lunatap/graph/state.py",
+    "lunatap/graph/visibility.py",
+    "lunatap/runtime/adb_endpoint.py",
+    "lunatap/runtime/process_probe.py",
+    "lunatap/drivers/ios",
+    "lunatap/runtime/ios_device_pool.py",
+    "lunatap/mcp/actuators/ios.py",
+    "lunatap/mcp/action_types.py",
+    "lunatap/data_engine/models.py",
+    "lunatap/agents/explorer/native_runner.py",
+    "lunatap/agents/explorer/perception_tools.py",
+    "mcp_server/utils/device_utils.py",
+    "packages/artemis-client/src/artemis_client"
+  ],
+  "exclude": [".venv/**"]
+}

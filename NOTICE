@@ -1,0 +1,15 @@
+Lunatap
+Copyright 2026 The Lunatap Authors
+
+Lunatap is derived from Artemis (https://github.com/google/artemis),
+Copyright 2026 Google LLC, licensed under the Apache License, Version 2.0.
+The Lunatap Authors have modified the original files; changed files are
+marked in their licence headers, and the full history is in git.
+
+Lunatap is an independent project. It is not affiliated with, sponsored by,
+or endorsed by Google LLC. "Google" and "Artemis" are used here only to
+identify the origin of the code.
+
+This product includes software from Mobile-Use by Minitap, Inc.
+(https://github.com/minitap-ai/mobile-use), licensed under the Apache License,
+Version 2.0. See third_party/mobile_use/LICENSE and third_party/mobile_use/NOTICE.

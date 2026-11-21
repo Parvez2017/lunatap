@@ -1,0 +1,1487 @@
+<!--
+ Copyright 2026 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<div class="home-container" [class.system-ready]="isReady()" [class.system-pending]="!isReady()" [class.pro-theme-active]="selectedProfile() === 'pro'">
+  <!-- Dynamic Aurora Glow Background -->
+  <div class="aurora-background">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+    <div class="glow glow-pending"></div>
+    <div class="glow glow-ready"></div>
+    <div class="glow glow-pro"></div>
+  </div>
+
+
+  <!-- Main Content Layout -->
+  <main class="home-content">
+    
+    <!-- Task entry section -->
+    <section class="hero-section">
+      <h1 class="hero-title">
+        What would you like to do on your iPhone?
+      </h1>
+    </section>
+
+    <!-- Top View Mode Stepper / Tab Switcher (Frosted Glass Segmented Control matching top-left nav) -->
+    <div class="mode-tabs-container">
+      <div class="mode-tabs">
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="activeTab() === 'diagnostics'"
+          (click)="setTab('diagnostics')"
+        >
+          @if (isReady()) {
+            <span class="material-symbols-outlined tab-icon icon-ready">check_circle</span>
+          } @else {
+            <span class="material-symbols-outlined tab-icon">tune</span>
+          }
+          <span class="tab-label">System Setup & Prerequisites</span>
+        </button>
+
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="activeTab() === 'launcher'"
+          (click)="setTab('launcher')"
+        >
+          @if (!isReady()) {
+            <span class="material-symbols-outlined tab-icon icon-locked">lock</span>
+          } @else {
+            <span class="material-symbols-outlined tab-icon">rocket_launch</span>
+          }
+          <span class="tab-label">Launch Autonomous Task</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: SYSTEM SETUP & FOOLPROOF STEP-BY-STEP GUIDANCE                    -->
+    <!-- ========================================================================= -->
+    @if (activeTab() === 'diagnostics') {
+      <section class="setup-guide-view">
+
+<!-- =================================================================== -->
+<!-- STEP 1: ENVIRONMENT & SYSTEM DEPENDENCIES (FIRST & FOUNDATIONAL)    -->
+<!-- =================================================================== -->
+<div class="guide-card" [class.card-pass]="isEnvironmentReady()" [class.card-warn]="!isEnvironmentReady()">
+
+  <div class="guide-card-header">
+    <div class="step-badge" [class.step-pass]="isEnvironmentReady()">
+      @if (isEnvironmentReady()) {
+      <span class="material-symbols-outlined step-check-icon">check</span>
+      } @else {
+      <span>1</span>
+      }
+    </div>
+    <div class="step-info">
+      <div class="step-title-row">
+        <h3 class="step-title">System & Environment</h3>
+      </div>
+      <p class="step-desc">Core tools, Xcode iOS tooling, and video recording runtime</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn-header-action"
+      [disabled]="isRefreshingDiagnostics()"
+      (click)="refreshReadiness()"
+      title="Re-check all system dependencies"
+    >
+      <span class="material-symbols-outlined" [class.spinning]="isRefreshingDiagnostics()">refresh</span>
+      <span>{{ isRefreshingDiagnostics() ? 'Checking...' : 'Re-check' }}</span>
+    </button>
+  </div>
+
+  <div class="guide-card-body">
+    <!-- One-Click Dependency Installer Bar when any env dep is missing -->
+    @if (hasReadinessReport() && !isEnvironmentReady()) {
+    <div class="one-click-install-bar">
+      <div class="install-bar-left">
+        <div class="install-bar-icon-box">
+          <span class="material-symbols-outlined bolt-icon">bolt</span>
+        </div>
+        <div class="install-bar-text">
+          <div class="install-bar-title-row">
+            <div class="install-bar-title">Automated Dependency Setup</div>
+          </div>
+          <div class="install-bar-desc">Run in a macOS terminal to install FFmpeg and the project dependencies:</div>
+        </div>
+      </div>
+      <div class="code-box small-box">
+        <code>{{ oneClickSetupCmd }}</code>
+        <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'one_click_deps'"
+          (click)="copyToClipboard(oneClickSetupCmd, 'one_click_deps')">
+          <span class="material-symbols-outlined">{{ copiedId() === 'one_click_deps' ? 'check' : 'content_copy'
+            }}</span>
+          <span>{{ copiedId() === 'one_click_deps' ? 'Copied!' : 'Copy' }}</span>
+        </button>
+      </div>
+    </div>
+    }
+
+    <!-- 4-Card Environment Matrix Grid -->
+    <div class="env-matrix-grid">
+
+      <!-- 1. Python Runtime Probe Card -->
+      <div class="env-item-card" [class.item-pass]="pythonProbe()?.status === 'pass'"
+        [class.item-fail]="pythonProbe()?.status === 'fail'">
+        <div class="item-header">
+          <div class="item-icon-box">
+            <span class="material-symbols-outlined item-icon">terminal</span>
+          </div>
+          <div class="item-title-group">
+            <div class="item-name">Python Runtime</div>
+            <div class="item-subtitle">{{ pythonProbe()?.summary || 'Checking…' }}</div>
+          </div>
+          <div class="item-status">
+            <span class="status-dot" [class.dot-pass]="pythonProbe()?.status === 'pass'" [class.dot-fail]="pythonProbe()?.status === 'fail'"></span>
+          </div>
+        </div>
+        @if (pythonProbe()?.status === 'fail') {
+        <div class="item-body">
+          <div class="item-action-box">
+            <div class="code-box small-box">
+              <span class="terminal-prefix">$</span>
+              <code class="code-text">uv python install 3.12</code>
+              <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'py_install'"
+                (click)="copyToClipboard('uv python install 3.12', 'py_install')">
+                <span class="material-symbols-outlined">{{ copiedId() === 'py_install' ? 'check' : 'content_copy'
+                  }}</span>
+                <span>{{ copiedId() === 'py_install' ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- 2. Xcode / iOS Tooling Card -->
+      <div class="env-item-card" [class.item-pass]="isIosToolingReady()"
+        [class.item-fail]="!!iosProbe() && !isIosToolingReady()">
+        <div class="item-header">
+          <div class="item-icon-box">
+            <span class="material-symbols-outlined item-icon">construction</span>
+          </div>
+          <div class="item-title-group">
+            <div class="item-name">Xcode iOS Tooling</div>
+            <div class="item-subtitle">{{ !iosProbe() ? 'Checking…' : (xcodeVersion() ? 'Xcode ' + xcodeVersion() + (simulatorBackend() ? ' · ' + simulatorBackend() + ' backend' : '') : 'Xcode Not Found') }}</div>
+          </div>
+          <div class="item-status">
+            <span class="status-dot" [class.dot-pass]="isIosToolingReady()" [class.dot-fail]="!!iosProbe() && !isIosToolingReady()"></span>
+          </div>
+        </div>
+        @if (iosProbe() && !isIosToolingReady()) {
+        <div class="item-body">
+          <div class="item-action-box">
+            <div class="code-box small-box">
+              <span class="terminal-prefix">$</span>
+              <code class="code-text">{{ xcodeSelectCmd }}</code>
+              <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'env_xcode_select'"
+                (click)="copyToClipboard(xcodeSelectCmd, 'env_xcode_select')">
+                <span class="material-symbols-outlined">{{ copiedId() === 'env_xcode_select' ? 'check' : 'content_copy'
+                  }}</span>
+                <span>{{ copiedId() === 'env_xcode_select' ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+            <div class="code-box small-box">
+              <span class="terminal-prefix">$</span>
+              <code class="code-text">{{ iosEnvCheckCmd }}</code>
+              <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'env_ios_check'"
+                (click)="copyToClipboard(iosEnvCheckCmd, 'env_ios_check')">
+                <span class="material-symbols-outlined">{{ copiedId() === 'env_ios_check' ? 'check' : 'content_copy'
+                  }}</span>
+                <span>{{ copiedId() === 'env_ios_check' ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- 3. System Configuration Card -->
+      <div class="env-item-card" [class.item-pass]="configProbe()?.status === 'pass'"
+        [class.item-fail]="configProbe()?.status === 'fail'">
+        <div class="item-header">
+          <div class="item-icon-box">
+            <span class="material-symbols-outlined item-icon">tune</span>
+          </div>
+          <div class="item-title-group">
+            <div class="item-name">System Configuration</div>
+            <div class="item-subtitle">{{ configProbe()?.summary || 'Config Valid' }}</div>
+          </div>
+          <div class="item-status">
+            <span class="status-dot" [class.dot-pass]="configProbe()?.status === 'pass'" [class.dot-fail]="configProbe()?.status === 'fail'"></span>
+          </div>
+        </div>
+        @if (configProbe()?.status === 'fail') {
+        <div class="item-body">
+          <div class="item-action-box">
+            <div class="code-box small-box">
+              <span class="terminal-prefix">$</span>
+              <code class="code-text">lunatap init</code>
+              <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'cfg_init'"
+                (click)="copyToClipboard('lunatap init', 'cfg_init')">
+                <span class="material-symbols-outlined">{{ copiedId() === 'cfg_init' ? 'check' : 'content_copy'
+                  }}</span>
+                <span>{{ copiedId() === 'cfg_init' ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- 4. Video Recording Toolchain Card (FFmpeg & ffprobe) -->
+      <div class="env-item-card" [class.item-pass]="toolchainProbe()?.status === 'pass'"
+        [class.item-fail]="toolchainProbe()?.status !== 'pass'">
+        <div class="item-header">
+          <div class="item-icon-box">
+            <span class="material-symbols-outlined item-icon">videocam</span>
+          </div>
+          <div class="item-title-group">
+            <div class="item-name">Video Toolchain</div>
+            <div class="item-subtitle">{{ toolchainProbe()?.summary || 'FFmpeg & ffprobe' }}</div>
+          </div>
+          <div class="item-status">
+            <span class="status-dot" [class.dot-pass]="toolchainProbe()?.status === 'pass'" [class.dot-fail]="toolchainProbe()?.status !== 'pass'"></span>
+          </div>
+        </div>
+        @if (toolchainProbe()?.status !== 'pass') {
+        <div class="item-body">
+          <div class="item-action-box">
+            <div class="code-box small-box">
+              <span class="terminal-prefix">$</span>
+              <code class="code-text">{{ toolchainInstallCmd }}</code>
+              <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'install_toolchain'"
+                (click)="copyToClipboard(toolchainInstallCmd, 'install_toolchain')">
+                <span class="material-symbols-outlined">{{ copiedId() === 'install_toolchain' ? 'check' : 'content_copy'
+                  }}</span>
+                <span>{{ copiedId() === 'install_toolchain' ? 'Copied!' : 'Copy' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- STEP 2: AI MODEL SETUP                                              -->
+<!-- =================================================================== -->
+<div class="guide-card" [class.card-pass]="isCredentialsReady()" [class.card-warn]="!isCredentialsReady()">
+
+  <div class="guide-card-header">
+    <div class="step-badge" [class.step-pass]="isCredentialsReady()">
+      @if (isCredentialsReady()) {
+      <span class="material-symbols-outlined step-check-icon">check</span>
+      } @else {
+      <span>2</span>
+      }
+    </div>
+    <div class="step-info">
+      <div class="step-title-row">
+        <h3 class="step-title">AI Model Setup</h3>
+      </div>
+      <p class="step-desc">OpenAI or an OpenAI-compatible endpoint, Google Gemini, or a custom model setup</p>
+    </div>
+  </div>
+
+  <div class="guide-card-body">
+    <!-- 2 Big Visual Choice Cards -->
+    <div class="model-choice-cards-row">
+      <!-- Card 1: OpenAI (Recommended) -->
+      <div class="choice-card" [class.selected]="modelSetupMode() === 'openai'" (click)="setModelSetupMode('openai')">
+        <div class="choice-card-top">
+          <div class="choice-radio">
+            <span class="radio-dot" [class.checked]="modelSetupMode() === 'openai'"></span>
+          </div>
+          <div class="choice-icon-wrap icon-gear">
+            <span class="material-symbols-outlined">smart_toy</span>
+          </div>
+          <div class="choice-text">
+            <div class="choice-title-row">
+              <span class="choice-title">OpenAI</span>
+              <span class="tag-badge tag-rec">Recommended</span>
+            </div>
+            <p class="choice-desc">GPT models, or any OpenAI-compatible endpoint: OpenRouter, Gemini, Claude, LM Studio, vLLM.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Gemini -->
+      <div class="choice-card" [class.selected]="modelSetupMode() === 'gemini'" (click)="setModelSetupMode('gemini')">
+        <div class="choice-card-top">
+          <div class="choice-radio">
+            <span class="radio-dot" [class.checked]="modelSetupMode() === 'gemini'"></span>
+          </div>
+          <div class="choice-icon-wrap">
+            <svg class="brand-svg gemini-svg" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="geminiChoiceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#4285F4" />
+                  <stop offset="50%" stop-color="#9B72CB" />
+                  <stop offset="100%" stop-color="#D96570" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M12 2C12 7.523 7.523 12 2 12C7.523 12 12 16.477 12 22C12 16.477 16.477 12 22 12C16.477 12 12 7.523 12 2Z"
+                fill="url(#geminiChoiceGrad)" />
+            </svg>
+          </div>
+          <div class="choice-text">
+            <div class="choice-title-row">
+              <span class="choice-title">Google Gemini</span>
+            </div>
+            <p class="choice-desc">Fast multimodal reasoning with free API key from Google AI Studio.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Custom Configuration -->
+      <div class="choice-card" [class.selected]="modelSetupMode() === 'custom'" (click)="setModelSetupMode('custom')">
+        <div class="choice-card-top">
+          <div class="choice-radio">
+            <span class="radio-dot" [class.checked]="modelSetupMode() === 'custom'"></span>
+          </div>
+          <div class="choice-icon-wrap icon-gear">
+            <span class="material-symbols-outlined">tune</span>
+          </div>
+          <div class="choice-text">
+            <div class="choice-title-row">
+              <span class="choice-title">Custom Configuration</span>
+            </div>
+            <p class="choice-desc">Define models in <code>config/artemis.jsonc</code> & keys in <code>.env</code>
+              (Claude, Ollama, OpenRouter).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Panel Based on Choice -->
+    @if (modelSetupMode() !== 'custom') {
+    <!-- 1. LLM API Key Box (OpenAI or Gemini) -->
+    <div class="credentials-input-box">
+      <div class="input-box-header">
+        <div class="header-label">
+          <span class="material-symbols-outlined label-icon">vpn_key</span>
+          <span>{{ llmKeyProvider() === 'openai' && llmBaseUrl().trim() ? 'API key for that endpoint:' : 'Enter ' + llmProviderLabel() + ' API Key:' }}</span>
+        </div>
+        @if (llmKeyProvider() === 'openai') {
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer"
+          class="btn-header-link">
+          <span class="material-symbols-outlined">open_in_new</span>
+          <span>Get API Key (OpenAI Platform)</span>
+        </a>
+        } @else {
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+          class="btn-header-link">
+          <span class="material-symbols-outlined">open_in_new</span>
+          <span>Get Free API Key (Google AI Studio)</span>
+        </a>
+        }
+      </div>
+
+      <div class="unified-key-row">
+        <div class="unified-key-wrapper">
+          <span class="material-symbols-outlined key-prefix-icon">key</span>
+          <input [type]="showLlmKey() ? 'text' : 'password'" class="unified-key-input"
+            [class.is-masked]="!showLlmKey()" [ngModel]="llmKeyInput()"
+            (ngModelChange)="onLlmKeyChange($event)" [placeholder]="llmKeyProvider() === 'openai' ? 'Enter OpenAI API Key (e.g. sk-...)' : 'Enter Gemini API Key (e.g. AIzaSy...)'"
+            spellcheck="false" autocomplete="off" />
+
+          <!-- Visibility Toggle -->
+          <button type="button" class="btn-icon-action" [title]="showLlmKey() ? 'Mask Key' : 'Show Plaintext'"
+            (click)="toggleLlmKeyVisibility()">
+            <span class="material-symbols-outlined">
+              {{ showLlmKey() ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+
+          <!-- Copy Button -->
+          @if (llmKeyInput()) {
+          <button type="button" class="btn-icon-action" title="Copy API Key"
+            (click)="copyToClipboard(llmKeyInput(), 'llm_key_field')">
+            <span class="material-symbols-outlined" [class.text-emerald]="copiedId() === 'llm_key_field'">
+              {{ copiedId() === 'llm_key_field' ? 'check' : 'content_copy' }}
+            </span>
+          </button>
+          }
+        </div>
+
+        <!-- Save Button -->
+        <button type="button" class="btn-unified-save" [class.btn-dirty]="isLlmKeyModified()"
+          [disabled]="isSavingLlmKey() || isTestingLlmKey() || (!isLlmKeyModified() && !llmKeyInput().trim())" (click)="saveLlmKey()">
+          @if (isSavingLlmKey()) {
+          <span class="material-symbols-outlined spin">sync</span>
+          <span>{{ llmKeyInput().trim() ? 'Verifying & Saving...' : 'Clearing...' }}</span>
+          } @else {
+          <span class="material-symbols-outlined">{{ llmKeyInput().trim() ? 'save' : 'delete_outline' }}</span>
+          <span>{{ !llmKeyInput().trim() ? 'Clear Key' : (isLlmKeyModified() ? 'Save & Apply' : 'Save Key') }}</span>
+          }
+        </button>
+
+        <!-- Test Button -->
+        <button type="button" class="btn-unified-test" [title]="'Test if the ' + llmProviderLabel() + ' API key is valid'"
+          [disabled]="isTestingLlmKey() || isSavingLlmKey() || !llmKeyInput().trim()" (click)="testLlmKey()">
+          @if (isTestingLlmKey()) {
+          <span class="material-symbols-outlined spin">sync</span>
+          <span>Testing...</span>
+          } @else {
+          <span class="material-symbols-outlined">network_check</span>
+          <span>Test Key</span>
+          }
+        </button>
+      </div>
+
+      @if (llmKeyProvider() === 'openai') {
+      <div class="compat-endpoint">
+        <button type="button" class="compat-toggle" (click)="toggleCompatibleEndpoint()"
+          [attr.aria-expanded]="showCompatibleEndpoint()">
+          <span class="material-symbols-outlined">{{ showCompatibleEndpoint() ? 'expand_less' : 'expand_more' }}</span>
+          <span>OpenAI-compatible endpoint</span>
+          <span class="compat-hint">{{ llmBaseUrl().trim() ? llmBaseUrl().trim() : 'optional: leave empty for OpenAI' }}</span>
+        </button>
+        @if (showCompatibleEndpoint()) {
+        <div class="compat-body">
+          <div class="compat-examples">
+            @for (ex of compatibleEndpointExamples; track ex.label) {
+            <button type="button" class="compat-chip" [class.selected]="llmBaseUrl().trim() === ex.url"
+              (click)="useEndpointExample(ex)">{{ ex.label }}</button>
+            }
+          </div>
+          <label class="compat-field">
+            <span>Base URL</span>
+            <input type="url" [ngModel]="llmBaseUrl()" (ngModelChange)="onLlmBaseUrlChange($event)"
+              placeholder="https://openrouter.ai/api/v1" spellcheck="false" autocomplete="off" />
+          </label>
+          <label class="compat-field">
+            <span>Model{{ llmBaseUrl().trim() ? '' : ' (optional)' }}</span>
+            <input type="text" [ngModel]="llmModel()" (ngModelChange)="onLlmModelChange($event)"
+              [placeholder]="llmBaseUrl().trim() ? 'Model name on that server (must accept images and tools)' : 'gpt-5.4-mini'"
+              spellcheck="false" autocomplete="off" />
+          </label>
+          <p class="compat-note">Put that service's key in the field above. Test Key and Save check it against this URL.</p>
+        </div>
+        }
+      </div>
+      }
+
+      @if (llmSaveMessage()) {
+      <div class="feedback-msg success">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span>{{ llmSaveMessage() }}</span>
+      </div>
+      }
+      @if (llmSaveError()) {
+      <div class="feedback-msg error">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ llmSaveError() }}</span>
+      </div>
+      }
+    </div>
+
+    <!-- 2. Optional OCR Enhancement -->
+    <div class="ocr-enhancement-card">
+      <div class="ocr-card-toggle-bar" (click)="toggleOcrConfig()">
+        <div class="toggle-bar-left">
+          <span class="material-symbols-outlined icon-ocr">document_scanner</span>
+          <div class="toggle-bar-titles">
+            <span class="ocr-main-title">Optional: Google Cloud Vision OCR</span>
+          </div>
+        </div>
+
+        <div class="toggle-bar-right">
+          @if (isOcrConfigured()) {
+            <span class="status-dot dot-pass" title="OCR Configured"></span>
+          }
+          <span class="material-symbols-outlined caret-icon">
+            {{ showOcrConfig() ? 'expand_less' : 'expand_more' }}
+          </span>
+        </div>
+      </div>
+      
+      @if (showOcrConfig()) {
+      <div class="ocr-content-body">
+        <p class="ocr-help-desc">
+          Provides screen text coordinate grounding to improve element detection and interaction accuracy on text-heavy apps.
+        </p>
+
+        <!-- Input Box -->
+        <div class="credentials-input-box ocr-box">
+          <div class="input-box-header">
+            <div class="header-label">
+              <span class="material-symbols-outlined label-icon">key</span>
+              <span>Cloud Vision API Key:</span>
+            </div>
+          </div>
+
+          <div class="unified-key-row">
+            <div class="unified-key-wrapper">
+              <span class="material-symbols-outlined key-prefix-icon">key</span>
+              <input [type]="showOcrKey() ? 'text' : 'password'" class="unified-key-input" [class.is-masked]="!showOcrKey()"
+                [ngModel]="ocrKeyInput()" (ngModelChange)="onOcrKeyChange($event)"
+                placeholder="Enter Vision OCR API Key (e.g. AIzaSy...)" spellcheck="false" autocomplete="off" />
+          
+              <!-- Visibility Toggle -->
+              <button type="button" class="btn-icon-action" [title]="showOcrKey() ? 'Mask Key' : 'Show Plaintext'"
+                (click)="toggleOcrKeyVisibility()">
+                <span class="material-symbols-outlined">
+                  {{ showOcrKey() ? 'visibility_off' : 'visibility' }}
+                </span>
+              </button>
+          
+              <!-- Copy Button -->
+              @if (ocrKeyInput()) {
+              <button type="button" class="btn-icon-action" title="Copy API Key"
+                (click)="copyToClipboard(ocrKeyInput(), 'ocr_key_field')">
+                <span class="material-symbols-outlined" [class.text-emerald]="copiedId() === 'ocr_key_field'">
+                  {{ copiedId() === 'ocr_key_field' ? 'check' : 'content_copy' }}
+                </span>
+              </button>
+              }
+            </div>
+            
+            <!-- Save Button -->
+            <button type="button" class="btn-unified-save" [class.btn-dirty]="isOcrModified()"
+              [disabled]="isSavingOcrKey() || isTestingOcrKey() || (!isOcrModified() && !ocrKeyInput().trim())" (click)="saveOcrKey()">
+              @if (isSavingOcrKey()) {
+              <span class="material-symbols-outlined spin">sync</span>
+              <span>{{ ocrKeyInput().trim() ? 'Verifying & Saving...' : 'Clearing...' }}</span>
+              } @else {
+              <span class="material-symbols-outlined">{{ ocrKeyInput().trim() ? 'save' : 'delete_outline' }}</span>
+              <span>{{ !ocrKeyInput().trim() ? 'Clear Key' : (isOcrModified() ? 'Save & Apply' : 'Save Key') }}</span>
+              }
+            </button>
+
+            <!-- Test Button -->
+            <button type="button" class="btn-unified-test" title="Test if Vision OCR key is valid"
+              [disabled]="isTestingOcrKey() || isSavingOcrKey() || !ocrKeyInput().trim()" (click)="testOcrKey()">
+              @if (isTestingOcrKey()) {
+              <span class="material-symbols-outlined spin">sync</span>
+              <span>Testing...</span>
+              } @else {
+              <span class="material-symbols-outlined">network_check</span>
+              <span>Test Key</span>
+              }
+            </button>
+          </div>
+          
+          @if (ocrSaveMessage()) {
+          <div class="feedback-msg success">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span>{{ ocrSaveMessage() }}</span>
+          </div>
+          }
+          @if (ocrSaveError()) {
+          <div class="feedback-msg error">
+            <span class="material-symbols-outlined">error</span>
+            <span>{{ ocrSaveError() }}</span>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    } @else {
+          <!-- CUSTOM CONFIGURATION & .ENV INSPECTOR (NO OCR HERE) -->
+          <div class="custom-config-inspector">
+
+      <!-- Section 1: Active Model Config (artemis.jsonc) -->
+      <div class="inspector-card">
+        <div class="inspector-card-header">
+          <div class="inspector-header-left">
+            <span class="material-symbols-outlined header-icon">tune</span>
+            <div class="inspector-header-titles">
+              <span class="inspector-title">Active Model Configuration</span>
+              <span class="inspector-subtitle">Defined in
+                <code>{{ modelConfigEnv()?.config_path || 'config/artemis.jsonc' }}</code></span>
+            </div>
+          </div>
+          <div class="inspector-header-actions">
+            <button type="button" class="btn-file-action" title="Copy file path"
+              (click)="copyToClipboard(modelConfigEnv()?.config_path || 'config/artemis.jsonc', 'config_path_btn')"
+            >
+              <span class="material-symbols-outlined" [class.text-emerald]="copiedId() === 'config_path_btn'">
+                {{ copiedId() === 'config_path_btn' ? 'check' : 'content_copy' }}
+              </span>
+              <span>Copy Path</span>
+              </button>
+              <button type="button" class="btn-file-action btn-toggle-code" (click)="toggleFullConfigFile()">
+                <span class="material-symbols-outlined">
+                  {{ showFullConfigFile() ? 'unfold_less' : 'code' }}
+                </span>
+                <span>{{ showFullConfigFile() ? 'Hide JSONC' : 'View JSONC' }}</span>
+            </button>
+          </div>
+          </div>
+          
+          <!-- Model Summary Row -->
+          <div class="inspector-summary-row">
+            <div class="summary-metric">
+              <span class="metric-label">Default Model</span>
+              <div class="metric-val-pill">
+                <span class="provider-dot"></span>
+                <span class="provider-name">{{ modelConfigEnv()?.default_model?.provider || 'google' }}</span>
+                <span class="model-divider">/</span>
+                <span class="model-name">{{ modelConfigEnv()?.default_model?.model || 'gemini-3.8-flash' }}</span>
+              </div>
+            </div>
+          
+            @if (modelConfigEnv()?.default_model?.fallback) {
+            <div class="summary-metric">
+              <span class="metric-label">Fallback Model</span>
+              <div class="metric-val-pill secondary">
+                <span>{{ modelConfigEnv()?.default_model?.fallback?.provider }}/{{
+                  modelConfigEnv()?.default_model?.fallback?.model }}</span>
+              </div>
+            </div>
+            }
+          
+          </div>
+          
+          <!-- Full JSONC Viewer -->
+          @if (showFullConfigFile()) {
+          <div class="jsonc-viewer-box">
+            <pre class="jsonc-code"><code>{{ modelConfigEnv()?.config_content }}</code></pre>
+          </div>
+          }
+          </div>
+
+      <!-- Section 2: Environment API Keys (.env) -->
+      <div class="inspector-card">
+        <div class="inspector-card-header">
+          <div class="inspector-header-left">
+            <span class="material-symbols-outlined header-icon">vpn_key</span>
+            <div class="inspector-header-titles">
+              <span class="inspector-title">Environment Variables & API Keys</span>
+              <span class="inspector-subtitle">Loaded from <code>{{ modelConfigEnv()?.env_path || '.env' }}</code></span>
+            </div>
+          </div>
+      
+          <button type="button" class="btn-file-action" title="Copy file path"
+            (click)="copyToClipboard(modelConfigEnv()?.env_path || '.env', 'env_path_btn')">
+          <span class="material-symbols-outlined" [class.text-emerald]="copiedId() === 'env_path_btn'">
+            {{ copiedId() === 'env_path_btn' ? 'check' : 'content_copy' }}
+          </span>
+          <span>Copy Path</span>
+          </button>
+        </div>
+        
+        <!-- Env Keys Table -->
+        <div class="env-keys-table">
+          @for (envItem of modelConfigEnv()?.env_vars || []; track envItem.name) {
+          <div class="env-key-row" [class.is-configured]="envItem.is_set">
+            <div class="env-name-col">
+              <code class="env-key-name">{{ envItem.name }}</code>
+            </div>
+            <div class="env-status-col">
+              @if (envItem.is_set) {
+              <span class="badge-env-pass">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>Configured</span>
+                @if (envItem.preview) {
+                <code class="key-preview">({{ envItem.preview }})</code>
+                }
+              </span>
+              } @else {
+              <span class="badge-env-unset">
+                <span class="material-symbols-outlined">radio_button_unchecked</span>
+                <span>Not Set</span>
+              </span>
+              }
+            </div>
+          </div>
+          }
+        </div>
+        </div>
+        
+        </div>
+    }
+    </div>
+    </div>
+
+        <!-- =================================================================== -->
+        <!-- STEP 3: iOS SIMULATOR OR PAIRED iPHONE / iPAD                       -->
+        <!-- =================================================================== -->
+        <div class="guide-card" [class.card-pass]="isDeviceReady()" [class.card-warn]="!isDeviceReady()">
+
+          <div class="guide-card-header">
+            <div class="step-badge" [class.step-pass]="isDeviceReady()">
+              @if (isDeviceReady()) {
+              <span class="material-symbols-outlined step-check-icon">check</span>
+              } @else {
+              <span>3</span>
+              }
+            </div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <h3 class="step-title">iOS Device</h3>
+              </div>
+              <p class="step-desc">An iOS Simulator or a paired iPhone / iPad with WebDriverAgent installed</p>
+            </div>
+
+            <button
+              type="button"
+              class="btn-refresh-devices btn-connection-options"
+              (click)="toggleConnectionMethods()"
+            >
+              <span class="material-symbols-outlined">menu_book</span>
+              <span>{{ showConnectionMethods() ? 'Hide Setup Guide' : 'Setup Guide' }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="btn-refresh-devices"
+              [disabled]="isRefreshingDevices()"
+              (click)="refreshDevices()"
+              title="Re-list simulators and paired devices"
+            >
+              <span class="material-symbols-outlined" [class.spinning]="isRefreshingDevices()">sync</span>
+              <span>{{ isRefreshingDevices() ? 'Refreshing...' : 'Refresh Devices' }}</span>
+            </button>
+          </div>
+
+          <div class="guide-card-body">
+
+            <div class="ios-device-panel">
+
+              <!-- Selected device hero -->
+              @if (selectedIosDevice(); as sim) {
+                <div class="connected-device-panel">
+                  <div class="device-hero-card">
+                    <div class="device-avatar">
+                      <span class="material-symbols-outlined device-hero-icon">
+                        {{ sim.model?.includes('iPad') ? 'tablet_mac' : 'phone_iphone' }}
+                      </span>
+                    </div>
+                    <div class="device-hero-details">
+                      <div class="device-hero-name">
+                        {{ sim.model || sim.serial }}
+                      </div>
+                      <div class="device-hero-meta">
+                        <span>{{ sim.is_emulator ? 'iOS Simulator' : 'Physical iOS Device' }}</span>
+                        <span class="meta-dot">·</span>
+                        <span>{{ sim.serial }}</span>
+                        @if (sim.product) {
+                          <span class="meta-dot">·</span>
+                          <span>{{ sim.product }}</span>
+                        }
+                        @if (sim.is_busy) {
+                          <span class="meta-dot">·</span>
+                          <span>Busy{{ sim.active_task_desc ? ': ' + sim.active_task_desc : '' }}</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="device-hero-status" [class.status-idle]="sim.state !== 'device'">
+                      <span class="status-dot" [class.dot-pass]="sim.state === 'device'" [class.dot-warn]="sim.state !== 'device'"></span>
+                      <span class="status-text">{{ sim.state === 'device' ? (sim.is_emulator ? 'Booted' : 'Connected') : (sim.is_emulator ? 'Shutdown — boots on run' : sim.state) }}</span>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- iOS device picker -->
+              @if (iosDevices().length > 0) {
+                <div class="ios-sim-panel">
+                  <div class="ios-sim-header">
+                    <span class="material-symbols-outlined ios-sim-icon">phone_iphone</span>
+                    <div class="ios-sim-header-text">
+                      <span class="ios-sim-title">iOS Devices</span>
+                      <span class="ios-sim-desc">
+                        {{ iosDevices().length }} available — select a simulator or paired iPhone/iPad to run tasks on
+                      </span>
+                    </div>
+                  </div>
+                  <div class="multi-device-switcher switcher-chips">
+                    @for (dev of iosDevices(); track dev.serial) {
+                      <button
+                        type="button"
+                        class="device-chip-btn"
+                        [class.selected]="dev.serial === selectedDeviceSerial()"
+                        (click)="selectTargetDevice(dev)"
+                        [title]="(dev.is_emulator ? 'Simulator' : 'Physical device') + ' · ' + dev.serial + (dev.is_busy ? ' · busy' : '')"
+                      >
+                        <span class="material-symbols-outlined chip-icon">
+                          {{ dev.model?.includes('iPad') ? 'tablet_mac' : 'phone_iphone' }}
+                        </span>
+                        <span class="chip-name">{{ dev.model || dev.serial }}</span>
+                        <span class="sim-state-dot" [class.booted]="dev.state === 'device'" [class.booting]="dev.state === 'Booting'" [title]="dev.state === 'device' ? (dev.is_emulator ? 'Booted' : 'Connected') : dev.state"></span>
+                        @if (dev.serial === selectedDeviceSerial()) {
+                          <span class="active-check">✓ Active</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <div class="ios-empty-state">
+                  <span class="material-symbols-outlined ios-empty-icon">phone_iphone</span>
+                  <div class="ios-empty-text">
+                    <div class="ios-empty-title">No iOS Devices Available</div>
+                    <div class="ios-empty-desc">
+                      {{ iosProbe()?.description || 'Boot an iOS Simulator, or connect a paired iPhone/iPad with WebDriverAgent installed. Follow the setup guide below.' }}
+                    </div>
+                  </div>
+                </div>
+              }
+
+            </div>
+
+            <!-- SETUP GUIDE: BOOT A SIMULATOR OR PAIR A PHYSICAL DEVICE -->
+            @if (showConnectionMethods() || iosDevices().length === 0) {
+              <div class="foolproof-guide-container">
+                <div class="connection-methods-nav">
+                  <button
+                    type="button"
+                    class="method-nav-card"
+                    [class.active]="activeIosGuideTab() === 'simulator'"
+                    (click)="setIosGuideTab('simulator')"
+                  >
+                    <div class="method-card-left">
+                      <div class="method-icon-box">
+                        <span class="material-symbols-outlined">smartphone</span>
+                      </div>
+                      <div class="method-info">
+                        <div class="method-title-row">
+                          <span class="method-title">iOS Simulator</span>
+                        </div>
+                        <span class="method-desc">Boot a simulator from Xcode</span>
+                      </div>
+                    </div>
+                    <div class="method-card-right">
+                      <span class="radio-indicator" [class.checked]="activeIosGuideTab() === 'simulator'"></span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="method-nav-card"
+                    [class.active]="activeIosGuideTab() === 'physical'"
+                    (click)="setIosGuideTab('physical')"
+                  >
+                    <div class="method-card-left">
+                      <div class="method-icon-box">
+                        <span class="material-symbols-outlined">usb</span>
+                      </div>
+                      <div class="method-info">
+                        <div class="method-title-row">
+                          <span class="method-title">Physical iPhone / iPad</span>
+                        </div>
+                        <span class="method-desc">Pair via Xcode, run WebDriverAgent</span>
+                      </div>
+                    </div>
+                    <div class="method-card-right">
+                      <span class="radio-indicator" [class.checked]="activeIosGuideTab() === 'physical'"></span>
+                    </div>
+                  </button>
+                </div>
+
+                <!-- Guide 1: iOS Simulator -->
+                @if (activeIosGuideTab() === 'simulator') {
+                  <div class="method-details-panel">
+                    <div class="usb-guide-intro">
+                      <span class="material-symbols-outlined intro-icon">smartphone</span>
+                      <span>Boot an iOS Simulator (Xcode 27+ natively, Xcode 15–26 through WebDriverAgent):</span>
+                    </div>
+
+                    <div class="cli-steps-list">
+                      <div class="cli-step-item">
+                        <div class="step-badge-num">1</div>
+                        <div class="step-content">
+                          <div class="step-title">Find a Simulator UDID</div>
+                          <p class="step-text">List the simulators installed with Xcode (add more under <strong>Xcode &gt; Settings &gt; Platforms</strong>):</p>
+                          <div class="code-box small-box">
+                            <span class="terminal-prefix">$</span>
+                            <code class="code-text">{{ listSimulatorsCmd }}</code>
+                            <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'sim_list'"
+                              (click)="copyToClipboard(listSimulatorsCmd, 'sim_list')">
+                              <span class="material-symbols-outlined">{{ copiedId() === 'sim_list' ? 'check' : 'content_copy' }}</span>
+                              <span>{{ copiedId() === 'sim_list' ? 'Copied!' : 'Copy' }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="cli-step-item">
+                        <div class="step-badge-num">2</div>
+                        <div class="step-content">
+                          <div class="step-title">Boot the Simulator</div>
+                          <p class="step-text">Boot it by UDID, then open Simulator.app to see it (or just open Simulator.app and pick a device):</p>
+                          <div class="code-box small-box">
+                            <span class="terminal-prefix">$</span>
+                            <code class="code-text">{{ bootSimulatorCmd }}</code>
+                            <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'sim_boot'"
+                              (click)="copyToClipboard(bootSimulatorCmd, 'sim_boot')">
+                              <span class="material-symbols-outlined">{{ copiedId() === 'sim_boot' ? 'check' : 'content_copy' }}</span>
+                              <span>{{ copiedId() === 'sim_boot' ? 'Copied!' : 'Copy' }}</span>
+                            </button>
+                          </div>
+                          <div class="code-box small-box">
+                            <span class="terminal-prefix">$</span>
+                            <code class="code-text">{{ openSimulatorCmd }}</code>
+                            <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'sim_open'"
+                              (click)="copyToClipboard(openSimulatorCmd, 'sim_open')">
+                              <span class="material-symbols-outlined">{{ copiedId() === 'sim_open' ? 'check' : 'content_copy' }}</span>
+                              <span>{{ copiedId() === 'sim_open' ? 'Copied!' : 'Copy' }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="cli-step-item">
+                        <div class="step-badge-num">3</div>
+                        <div class="step-content">
+                          <div class="step-title">Xcode 15–26 Only: Build WebDriverAgent</div>
+                          <p class="step-text">Older Xcode drives simulators through WebDriverAgent. Build it once (no signing needed):</p>
+                          <div class="code-box small-box">
+                            <span class="terminal-prefix">$</span>
+                            <code class="code-text">{{ wdaSimulatorBuildCmd }}</code>
+                            <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'wda_sim'"
+                              (click)="copyToClipboard(wdaSimulatorBuildCmd, 'wda_sim')">
+                              <span class="material-symbols-outlined">{{ copiedId() === 'wda_sim' ? 'check' : 'content_copy' }}</span>
+                              <span>{{ copiedId() === 'wda_sim' ? 'Copied!' : 'Copy' }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="cli-step-item">
+                        <div class="step-badge-num">4</div>
+                        <div class="step-content">
+                          <div class="step-title">Select It Above</div>
+                          <p class="step-text">Click <strong>Refresh Devices</strong>, then pick the simulator. A shut-down simulator is booted when the task starts.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- Guide 2: Physical iPhone / iPad -->
+                @if (activeIosGuideTab() === 'physical') {
+                  <div class="method-details-panel">
+                    <div class="usb-guide-intro">
+                      <span class="material-symbols-outlined intro-icon">cable</span>
+                      <span>Pair your iPhone or iPad with Xcode and install WebDriverAgent on it (see <code>docs/ios.md</code>):</span>
+                    </div>
+
+                    <div class="steps-flow-grid">
+                      <div class="flow-step-card">
+                        <div class="step-card-header">
+                          <span class="step-number-badge">1</span>
+                          <span class="material-symbols-outlined step-card-icon">usb</span>
+                        </div>
+                        <div class="step-card-title">Connect &amp; Trust</div>
+                        <div class="step-card-desc">Connect the device over USB and tap <strong>Trust</strong> on the pairing prompt.</div>
+                      </div>
+
+                      <div class="flow-step-card">
+                        <div class="step-card-header">
+                          <span class="step-number-badge">2</span>
+                          <span class="material-symbols-outlined step-card-icon">toggle_on</span>
+                        </div>
+                        <div class="step-card-title">Enable Developer Mode</div>
+                        <div class="step-card-desc">On iOS 16+, turn on <strong>Settings &gt; Privacy &amp; Security &gt; Developer Mode</strong>.</div>
+                      </div>
+
+                      <div class="flow-step-card">
+                        <div class="step-card-header">
+                          <span class="step-number-badge">3</span>
+                          <span class="material-symbols-outlined step-card-icon">developer_mode</span>
+                        </div>
+                        <div class="step-card-title">Pair in Xcode</div>
+                        <div class="step-card-desc">Open <strong>Window &gt; Devices and Simulators</strong> and confirm the device shows as paired and connected.</div>
+                      </div>
+
+                      <div class="flow-step-card">
+                        <div class="step-card-header">
+                          <span class="step-number-badge">4</span>
+                          <span class="material-symbols-outlined step-card-icon">install_mobile</span>
+                        </div>
+                        <div class="step-card-title">Install WebDriverAgent</div>
+                        <div class="step-card-desc">Build and install the signed WebDriverAgent runner once per device, as described in <code>docs/ios.md</code>.</div>
+                      </div>
+                    </div>
+
+                    <div class="cli-steps-list">
+                      <div class="cli-step-item">
+                        <div class="step-badge-num">✓</div>
+                        <div class="step-content">
+                          <div class="step-title">Verify the Pairing</div>
+                          <p class="step-text">The device should be listed as <code>connected</code> (or <code>available (paired)</code>):</p>
+                          <div class="code-box small-box">
+                            <span class="terminal-prefix">$</span>
+                            <code class="code-text">{{ listPhysicalDevicesCmd }}</code>
+                            <button type="button" class="btn-copy-code" [class.copied]="copiedId() === 'phys_list'"
+                              (click)="copyToClipboard(listPhysicalDevicesCmd, 'phys_list')">
+                              <span class="material-symbols-outlined">{{ copiedId() === 'phys_list' ? 'check' : 'content_copy' }}</span>
+                              <span>{{ copiedId() === 'phys_list' ? 'Copied!' : 'Copy' }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <!-- Ready Banner Footer: Direct One-Click Launch -->
+        @if (isReady()) {
+          <div class="ready-banner-footer">
+            <div class="ready-banner-left">
+              <div class="step-badge step-pass">
+                <span class="material-symbols-outlined step-check-icon">check</span>
+              </div>
+              <div class="ready-text-group">
+                <h4 class="ready-title">System Ready for Autonomous Tasks</h4>
+                <p class="ready-desc">All dependencies, AI model credentials, and a target device are verified and ready to run.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-proceed-launch" (click)="setTab('launcher')">
+              <span>Launch Autonomous Task</span>
+              <span class="material-symbols-outlined rocket-icon">rocket_launch</span>
+            </button>
+          </div>
+        }
+
+      </section>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: TASK EXECUTION LAUNCHER (UNIFIED SCULPTURED COMPOSER)            -->
+    <!-- ========================================================================= -->
+    @if (activeTab() === 'launcher') {
+      <section class="task-launcher-view">
+
+        <!-- Prerequisites Drop Alert if any blocker probe is not passing -->
+        @if (hasReadinessReport() && !isReady()) {
+          <div class="launcher-warning-bar" (click)="setTab('diagnostics')">
+            <span class="material-symbols-outlined warn-icon">warning</span>
+            <span>
+              Prerequisites incomplete: runtime, credentials, or iOS device is not ready. Click here to open Setup Guide.
+            </span>
+            <span class="material-symbols-outlined arrow">arrow_forward</span>
+          </div>
+        }
+
+        <!-- Task composer -->
+        <div class="composer-card" [class.is-pro-active]="selectedProfile() === 'pro'">
+          
+          <!-- Smart Intent Recommendation Strip (if detected) -->
+          @if (showIntentSuggestion()) {
+            <div class="intent-suggestion-strip">
+              <div class="suggestion-left">
+                <span class="material-symbols-outlined sparkle-icon">auto_awesome</span>
+                <span class="suggestion-text">
+                  Continuous monitoring or complex task detected. Recommended: <strong>Pro Mode</strong>
+                </span>
+              </div>
+              <button type="button" class="btn-switch-pro" (click)="setProfile('pro')">
+                <span>Switch to Pro</span>
+                <span class="material-symbols-outlined btn-arrow">arrow_forward</span>
+              </button>
+            </div>
+          }
+
+          <!-- Borderless task input -->
+          <div class="composer-input-area">
+            <textarea
+              id="task-input-field"
+              class="composer-textarea"
+              rows="3"
+              [(ngModel)]="taskGoal"
+              [disabled]="isSubmitting()"
+              placeholder="Describe what you want to achieve on your iPhone (e.g. Open Settings and turn on Dark Mode)..."
+              (keydown.control.enter)="runTask()"
+              (keydown.meta.enter)="runTask()"
+            ></textarea>
+          </div>
+
+          <!-- Contextual Model Descriptor Strip (Clean & Unified for Flash & Pro) -->
+          <div class="composer-model-descriptor" [class.is-pro]="selectedProfile() === 'pro'">
+            <div class="descriptor-icon-wrap">
+              <span class="material-symbols-outlined">{{ selectedProfile() === 'flash' ? 'bolt' : 'psychology' }}</span>
+            </div>
+            <div class="descriptor-body">
+              @if (selectedProfile() === 'flash') {
+                <p class="desc-line">
+                  <span class="mode-name">Flash</span>
+                  <span class="bullet">·</span>
+                  <span>Token-efficient, rapid <strong>3–5s/step</strong> decisions straight from the live screen. Best for everyday tasks with a clear path, however long they run.</span>
+                  <span class="limitation-tag">(No plan, no result check)</span>
+                </p>
+              } @else {
+                <p class="desc-line">
+                  <span class="mode-name">Pro</span>
+                  <span class="bullet">·</span>
+                  <span>Plans first, checks its results and recovers when a tap is blocked. Handles <strong>100+ step</strong> workflows and live phone monitoring (<strong>15–40s</strong> / step).</span>
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Error Banner if any -->
+          @if (errorMessage()) {
+            <div class="error-banner">
+              <span class="material-symbols-outlined error-icon">error</span>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
+
+          <!-- Composer Bottom Action Bar -->
+          <div class="composer-action-bar">
+            <div class="bar-left">
+              <!-- Frosted Glass Architecture Toggle Capsule -->
+              <div class="model-toggle-capsule">
+                <button
+                  type="button"
+                  class="model-toggle-btn btn-flash"
+                  [class.active]="selectedProfile() === 'flash'"
+                  (click)="setProfile('flash')"
+                  title="Flash: fast single-look loop for everyday app tasks (3–5s/step)"
+                >
+                  <span class="material-symbols-outlined btn-icon">bolt</span>
+                  <span class="btn-text">Flash</span>
+                </button>
+                <button
+                  type="button"
+                  class="model-toggle-btn btn-pro"
+                  [class.active]="selectedProfile() === 'pro'"
+                  (click)="setProfile('pro')"
+                  title="Pro: plans first, checks results and recovers from blocked steps. For long or complex tasks (15–40s/step)"
+                >
+                  <span class="material-symbols-outlined btn-icon">psychology</span>
+                  <span class="btn-text">Pro</span>
+                </button>
+              </div>
+
+              <!-- Run target indicator (selected in System Setup) -->
+              @if (selectedIosDevice(); as tgt) {
+                <button
+                  type="button"
+                  class="target-device-chip"
+                  [class.is-ios]="true"
+                  (click)="setTab('diagnostics')"
+                  [title]="'Run target: ' + (tgt.model || tgt.serial) + ' — click to change'"
+                >
+                  <span class="material-symbols-outlined target-icon">
+                    {{ tgt.model?.includes('iPad') ? 'tablet_mac' : 'phone_iphone' }}
+                  </span>
+                  <span class="target-name">{{ tgt.model || tgt.serial }}</span>
+                  <span class="target-plat">{{ tgt.is_emulator ? 'iOS Sim' : 'iOS' }}</span>
+                </button>
+              }
+            </div>
+
+            <div class="bar-right">
+              @if (taskGoal().length > 0) {
+                <span class="char-count">{{ taskGoal().length }} chars</span>
+              }
+
+              <!-- Run Button -->
+              <button
+                type="button"
+                class="btn-run-composer"
+                [class.btn-run-pro]="selectedProfile() === 'pro'"
+                [disabled]="!taskGoal().trim() || isSubmitting() || !isReady()"
+                [title]="!isReady() ? 'Complete System Setup before running' : 'Run task'"
+                (click)="runTask()"
+              >
+                @if (isSubmitting()) {
+                  <span class="spinner"></span><span>Starting...</span>
+                } @else {
+                  <span class="material-symbols-outlined run-icon">play_arrow</span><span>Run Task</span>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro Mode Standalone Expected Output Card (Clean & Minimalist) -->
+        @if (selectedProfile() === 'pro') {
+          <div class="pro-outputter-standalone-card">
+            <div class="outputter-card-header">
+              <span class="outputter-title">Expected Output</span>
+              <span class="outputter-optional-tag">(Optional)</span>
+            </div>
+
+            <div class="outputter-input-wrapper">
+              <input
+                type="text"
+                class="outputter-standalone-input"
+                [ngModel]="expectedOutput()"
+                (ngModelChange)="expectedOutput.set($event)"
+                placeholder="Specify expected output or schema (e.g. 'Extract SMS verification code as JSON' or 'Summary of discounts and total price')..."
+                spellcheck="false"
+              />
+              @if (expectedOutput().trim()) {
+                <button
+                  type="button"
+                  class="btn-clear-standalone"
+                  (click)="expectedOutput.set('')"
+                  title="Clear expected output"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Pro Mode Tuning Card: verification depth & explorer perception sliders -->
+          <div class="pro-tuning-card" [class.tip-open]="activeTuningTip() !== null">
+            <div class="tuning-card-header">
+              <span class="tuning-title">Pro settings</span>
+              @if (!isTuningDefault()) {
+                <button type="button" class="btn-tuning-reset" (click)="resetTuning()" title="Back to the defaults">Reset</button>
+              }
+            </div>
+
+            <div class="tuning-sliders">
+              @for (slider of tuningSliders(); track slider.kind) {
+                <div
+                  class="tuning-slider"
+                  [class.verify]="slider.kind === 'verify'"
+                  [class.explore]="slider.kind === 'explore'"
+                  [class.dragging]="activeTuningTip() === slider.kind"
+                  [style.--pct]="slider.fraction"
+                >
+                  <div class="slider-head">
+                    <span class="slider-name">{{ slider.name }}</span>
+                    <span class="slider-value">{{ slider.level.label }}</span>
+                  </div>
+                  <div class="slider-ends" aria-hidden="true">
+                    <span>{{ slider.ends[0] }}</span>
+                    <span>{{ slider.ends[1] }}</span>
+                  </div>
+
+                  <div
+                    class="slider-track-wrap"
+                    (pointerenter)="showTuningTip(slider.kind)"
+                    (pointerleave)="hideTuningTip(slider.kind)"
+                  >
+                    <div class="slider-rail" aria-hidden="true">
+                      <div class="slider-fill"></div>
+                      @for (lvl of slider.ladder; track lvl.id; let i = $index) {
+                        <span
+                          class="slider-notch"
+                          [class.reached]="i <= slider.index"
+                          [style.--n]="notchFraction(i, slider.ladder.length)"
+                        ></span>
+                      }
+                      @if (slider.index === slider.ladder.length - 1) {
+                        <!-- Re-created each time the thumb reaches the end, so the spread replays. -->
+                        <div class="slider-solid"></div>
+                        <svg class="slider-dither" width="100%" height="6" aria-hidden="true">
+                          @for (px of ditherPixels; track $index) {
+                            <rect
+                              [attr.x]="px.x + '%'"
+                              [attr.y]="px.y"
+                              width="2"
+                              height="2"
+                              [style.opacity]="px.opacity"
+                              [style.animation-delay.ms]="px.delay"
+                            />
+                          }
+                        </svg>
+                      }
+                    </div>
+                    <div class="slider-thumb" aria-hidden="true"></div>
+                    @if (slider.index === slider.ladder.length - 1) {
+                      <span class="thumb-ripple" aria-hidden="true"></span>
+                    }
+                    <input
+                      type="range"
+                      class="slider-input"
+                      min="0"
+                      [max]="slider.ladder.length - 1"
+                      step="1"
+                      [value]="slider.index"
+                      (input)="setTuningIndex(slider.kind, $any($event.target).value)"
+                      (focus)="showTuningTip(slider.kind)"
+                      (blur)="hideTuningTip(slider.kind)"
+                      [attr.aria-label]="slider.name"
+                      [attr.aria-valuetext]="slider.level.label + ': ' + slider.level.tagline"
+                    />
+
+                    @if (activeTuningTip() === slider.kind) {
+                      <div class="tuning-tip-arrow" aria-hidden="true"></div>
+                      <div class="tuning-tip" role="tooltip">
+                        <div class="tip-heading">
+                          <span class="tip-title">{{ slider.level.label }}</span>
+                          <span class="tip-latency">{{ slider.level.latency }}</span>
+                        </div>
+                        <p class="tip-tagline">{{ slider.level.tagline }}</p>
+                        <div class="tip-section">
+                          <span class="tip-section-title">What happens</span>
+                          <ul>
+                            @for (line of slider.level.runs; track $index) {
+                              <li>{{ line }}</li>
+                            }
+                          </ul>
+                        </div>
+                        @if (slider.level.skips?.length) {
+                          <div class="tip-section skips">
+                            <span class="tip-section-title">Not included</span>
+                            <ul>
+                              @for (line of slider.level.skips; track $index) {
+                                <li>{{ line }}</li>
+                              }
+                            </ul>
+                          </div>
+                        }
+                        <div class="tip-best">
+                          <span class="tip-section-title">Use it for</span>
+                          <span>{{ slider.level.bestFor }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Recommended Tasks Hub (Clean & Direct) -->
+        <div class="smart-suggestions-container">
+          <!-- Header Bar: Clean Category Tabs & Shuffle -->
+          <div class="suggestions-header-bar">
+            <div class="header-left">
+              <div class="section-label">
+                <span class="material-symbols-outlined section-icon">auto_awesome</span>
+                <span class="label-text">Recommended Tasks</span>
+              </div>
+
+              <!-- Filter Tabs -->
+              <div class="category-tabs-group">
+                <button
+                  type="button"
+                  class="cat-tab-btn"
+                  [class.active]="selectedCategory() === 'all'"
+                  (click)="setCategory('all')"
+                >
+                  <span>All</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="cat-tab-btn cat-flash"
+                  [class.active]="selectedCategory() === 'flash'"
+                  (click)="setCategory('flash')"
+                >
+                  <span class="material-symbols-outlined tab-mini-icon">bolt</span>
+                  <span>Flash</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="cat-tab-btn cat-pro"
+                  [class.active]="selectedCategory() === 'pro'"
+                  (click)="setCategory('pro')"
+                >
+                  <span class="material-symbols-outlined tab-mini-icon">psychology</span>
+                  <span>Pro</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="cat-tab-btn"
+                  [class.active]="selectedCategory() === 'cross_app'"
+                  (click)="setCategory('cross_app')"
+                >
+                  <span class="material-symbols-outlined tab-mini-icon">sync_alt</span>
+                  <span>Multi-App</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="cat-tab-btn"
+                  [class.active]="selectedCategory() === 'monitor'"
+                  (click)="setCategory('monitor')"
+                >
+                  <span class="material-symbols-outlined tab-mini-icon">monitoring</span>
+                  <span>Monitor</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="header-right">
+              <button type="button" class="btn-shuffle-suggestions" (click)="shuffleSuggestions()" title="Discover more tasks">
+                <span class="material-symbols-outlined shuffle-icon">shuffle</span>
+                <span>Shuffle</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Suggestions Grid -->
+          <div class="suggestions-cards-grid">
+            @for (item of filteredSuggestions(); track item.id) {
+              <div
+                class="suggestion-card"
+                [class.is-pro-card]="item.profile === 'pro'"
+                [class.is-flash-card]="item.profile === 'flash'"
+                (click)="applySuggestion(item)"
+              >
+                <!-- Top Row: App Icon + Name + Mode Badge -->
+                <div class="card-top-row">
+                  <div class="app-icons-cluster">
+                    @for (app of item.apps; track app.name) {
+                      <div class="app-icon-badge" [title]="app.name">
+                        <span class="material-symbols-outlined">{{ app.icon }}</span>
+                      </div>
+                    }
+                    <span class="app-names-label">{{ getAppNamesDisplay(item.apps) }}</span>
+                  </div>
+
+                  <span class="mode-badge" [class.mode-pro]="item.profile === 'pro'" [class.mode-flash]="item.profile === 'flash'"
+                    [title]="item.profile === 'pro' ? 'Uses Lunatap Pro (Multi-Agent Cognitive State Graph)' : 'Uses Lunatap Flash (Reactive Fast Loop)'">
+                    {{ item.profile === 'pro' ? 'Pro' : 'Flash' }}
+                  </span>
+                </div>
+
+                <!-- Middle Content: Title + Description -->
+                <div class="card-body">
+                  <h4 class="card-title">{{ item.title }}</h4>
+                  <p class="card-desc">{{ item.description }}</p>
+                </div>
+
+                <!-- Bottom Footer Row: Tag & Action -->
+                <div class="card-footer-row">
+                  <span class="tag-pill">{{ item.tag }}</span>
+                  <div class="use-prompt-action">
+                    <span>Use</span>
+                    <span class="material-symbols-outlined action-arrow">arrow_forward</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+
+      </section>
+    }
+
+  </main>
+</div>
