@@ -47,25 +47,50 @@ The agent only taps what is actually visible. Elements hidden behind iOS 26 floa
 
 ## Install
 
-You need macOS with Xcode 15 or later, Python 3.12+, and [uv](https://docs.astral.sh/uv/).
+On a Mac with Xcode 15 or later, run one command:
 
 ```bash
-git clone https://github.com/parvej-flight/lunatap.git && cd lunatap
+curl -fsSL https://raw.githubusercontent.com/Parvez2017/lunatap/main/install.sh | bash
+```
+
+or, with Node.js:
+
+```bash
+npx lunatap
+```
+
+The installer:
+
+- installs [uv](https://docs.astral.sh/uv/) if you don't have it, which also brings Python 3.12;
+- puts Lunatap in `~/.lunatap`;
+- on Xcode 15–26, builds WebDriverAgent for simulators;
+- adds the MCP server to every AI IDE it finds (Claude Code, Cursor, Codex, Windsurf, VS Code);
+- adds a `lunatap` command.
+
+Run the same command again to update. Restart your IDE afterwards so it loads the new server.
+
+To install for one IDE only or in another folder, pass options:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Parvez2017/lunatap/main/install.sh | bash -s -- --ide cursor --dir ~/tools/lunatap
+npx lunatap install --ide claude --skip-wda
+```
+
+<details>
+<summary>Manual install (for contributors)</summary>
+
+```bash
+git clone https://github.com/Parvez2017/lunatap.git && cd lunatap
 uv sync --dev
 bash scripts/setup_ios_env.sh               # checks Xcode, simulators and paired devices
 bash scripts/setup_ios_wda_simulator.sh     # Xcode 15–26 only: builds WebDriverAgent once
 uv run lunatap doctor                       # confirms everything is ready
+uv run lunatap mcp --install claude         # or: cursor, codex, windsurf, vscode, cline, roo, antigravity, all
 ```
 
-Connect it to your AI IDE:
+</details>
 
-```bash
-uv run lunatap mcp --install claude    # or: cursor, codex, windsurf, vscode, cline, roo, antigravity, all
-```
-
-This adds the `lunatap` MCP server and its usage rules to the IDE. Restart or reconnect the IDE's MCP servers afterwards.
-
-The harness tools need no model key: your IDE's agent is the brain. The autonomous agent ([example 6](#6-run-a-whole-task-unattended)) needs one in `.env`. See [Models](#models).
+The harness tools need no model key: your IDE's agent is the brain. The autonomous agent ([example 6](#6-run-a-whole-task-unattended)) needs one in `~/.lunatap/.env`. See [Models](#models).
 
 Find a simulator's UDID with `xcrun simctl list devices booted`. If only one simulator is booted, you can leave the UDID out everywhere.
 
@@ -299,7 +324,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as desc
 - Better map markers: tell icons from pins on grey markers, and read clusters' own count badges.
 - Visual diffs between builds: flag screens that changed since the last good run.
 
-Ideas and pull requests are welcome. Open an [issue](https://github.com/parvej-flight/lunatap/issues).
+Ideas and pull requests are welcome. Open an [issue](https://github.com/Parvez2017/lunatap/issues).
 
 ## Credits
 
