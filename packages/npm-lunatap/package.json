@@ -1,0 +1,15 @@
+{
+  "name": "lunatap",
+  "version": "0.1.0",
+  "description": "Install Lunatap, an AI agent that tests iOS apps, and its MCP server for Claude Code, Cursor, Codex and other AI IDEs.",
+  "bin": { "lunatap": "bin/lunatap.js" },
+  "files": ["bin/", "install.sh"],
+  "scripts": { "prepack": "cp ../../install.sh ./install.sh" },
+  "os": ["darwin"],
+  "engines": { "node": ">=18" },
+  "keywords": ["ios", "mcp", "mobile-testing", "ai-agent", "xcode", "simulator", "claude-code", "cursor"],
+  "homepage": "https://github.com/Parvez2017/lunatap#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/Parvez2017/lunatap.git", "directory": "packages/npm-lunatap" },
+  "bugs": "https://github.com/Parvez2017/lunatap/issues",
+  "license": "Apache-2.0"
+}
