@@ -100,7 +100,7 @@ main() {
 
   # 6. WebDriverAgent for simulators on Xcode 15–26 (Xcode 27 uses its own tools).
   if [ "$skip_wda" = 0 ] && [ "$xcode_major" -lt 27 ]; then
-    if ls "$HOME/.artemis/wda/simulator/"*.xctestrun >/dev/null 2>&1; then
+    if [ -n "$(find "$HOME/.artemis/wda/simulator" -name '*.xctestrun' -print -quit 2>/dev/null)" ]; then
       ok "WebDriverAgent for simulators already built"
     else
       say "Building WebDriverAgent for simulators (one time, a few minutes)"
