@@ -30,10 +30,14 @@ one with ``xcodebuild test-without-building`` from a prebuilt ``.xctestrun``
 (``scripts/setup_ios_wda_simulator.sh`` produces it).
 """
 
+import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 import os
+import re
 import tempfile
-from typing import Any
+from typing import Any, Literal
+import zlib
 
 from lunatap.drivers.ios.discovery import WDA_MIN_XCODE, run_xcrun
 from lunatap.drivers.ios.physical_driver import WDA_XCTESTRUN_ENV, PhysicalIosDriver
@@ -61,6 +65,77 @@ _SIM_WDA_SETUP_HINT = (
     "'generic/platform=iOS Simulator', or start WDA yourself (Appium, Xcode) and set "
     f"ARTEMIS_IOS_WDA_URL / {WDA_PORT_ENV}."
 )
+
+
+#: Ports tried, in order, when the default one belongs to another simulator.
+#: Each simulator starts at its own offset (from its UDID), so it comes back
+#: to the same port, and to its own running WebDriverAgent, on the next run.
+_FALLBACK_PORT_BASE = WDA_DEFAULT_PORT + 1
+_FALLBACK_PORT_SPAN = 400
+_FALLBACK_PORT_TRIES = 8
+_SIM_PROCESS_RE = re.compile(r"/CoreSimulator/Devices/([0-9A-Fa-f-]{36})/")
+_PORT_LOOKUP_TIMEOUT = 5.0
+
+
+@dataclass(frozen=True)
+class PortOwner:
+    """Who listens on a local TCP port.
+
+    ``simulator`` carries the UDID of the simulator whose process listens
+    (WebDriverAgent's runner lives under ``CoreSimulator/Devices/<UDID>/``);
+    ``other`` is any other process; ``unknown`` means the lookup failed.
+    """
+
+    state: Literal["free", "simulator", "other", "unknown"]
+    udid: str | None = None
+    command: str = ""
+
+
+async def _run_quiet(*argv: str) -> tuple[int, str] | None:
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *argv,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await asyncio.wait_for(process.communicate(), _PORT_LOOKUP_TIMEOUT)
+    except (TimeoutError, OSError):
+        return None
+    return process.returncode or 0, out.decode(errors="replace")
+
+
+async def port_owner(port: int) -> PortOwner:
+    """The process listening on ``127.0.0.1:port``, read from the OS, not from WDA.
+
+    Asking WDA itself is not enough: a WDA whose foreground app hangs never
+    answers, and two simulators can share a name.
+    """
+    listed = await _run_quiet("lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t")
+    if listed is None:
+        return PortOwner("unknown")
+    code, out = listed
+    pids = [line.strip() for line in out.splitlines() if line.strip().isdigit()]
+    if not pids:
+        # lsof exits 1 when nothing matches.
+        return PortOwner("free") if code in (0, 1) else PortOwner("unknown")
+    shown = await _run_quiet("ps", "-o", "command=", "-p", pids[0])
+    if shown is None or not shown[1].strip():
+        return PortOwner("unknown")
+    command = shown[1].strip()
+    match = _SIM_PROCESS_RE.search(command)
+    if match:
+        return PortOwner("simulator", match.group(1).upper(), command)
+    return PortOwner("other", None, command)
+
+
+def fallback_ports(udid: str) -> list[int]:
+    """Ports this simulator tries after the default one, stable across runs."""
+    offset = zlib.crc32(udid.upper().encode()) % _FALLBACK_PORT_SPAN
+    return [
+        _FALLBACK_PORT_BASE + (offset + step) % _FALLBACK_PORT_SPAN
+        for step in range(_FALLBACK_PORT_TRIES)
+    ]
 
 
 def default_simulator_xctestrun() -> Path | None:
@@ -96,6 +171,8 @@ class WdaSimulatorDriver(PhysicalIosDriver):
             device_id=device_id, width=width, height=height, workspace_path=workspace_path
         )
         self._simulator_name: str | None = None
+        #: The port chosen for this simulator's WDA, once ``_wda_candidates`` ran.
+        self._port: int | None = None
 
     # --- Resolution and connection: simulator semantics from simctl ---
 
@@ -121,14 +198,58 @@ class WdaSimulatorDriver(PhysicalIosDriver):
         return port
 
     async def _wda_candidates(self) -> list[str]:
-        # Simulators share the host network: no tunnel, just localhost on the
-        # configured port (never the default port of some other simulator).
+        # Simulators share the host network: no tunnel, just localhost on a
+        # port that is free or already held by this simulator's own WDA.
+        port = await self._choose_port()
         candidates: list[str] = []
-        for raw in (os.environ.get(WDA_URL_ENV), f"127.0.0.1:{self._wda_port()}"):
+        for raw in (os.environ.get(WDA_URL_ENV), f"127.0.0.1:{port}"):
             url = normalize_wda_url(raw) if raw else ""
             if url and url not in candidates:
                 candidates.append(url)
         return candidates
+
+    async def _choose_port(self) -> int:
+        """The configured or default port, unless another process holds it.
+
+        A WDA on the port that runs on a different simulator is never used:
+        its taps and screens would be that simulator's. With
+        ``ARTEMIS_IOS_WDA_PORT`` set, that is an error; otherwise the
+        simulator moves to its own fallback port.
+        """
+        if self._port is not None:
+            return self._port
+        mine = self._device_id.upper()
+        configured = bool(os.environ.get(WDA_PORT_ENV))
+        first = self._wda_port()
+        for port in [first] if configured else [first, *fallback_ports(mine)]:
+            owner = await port_owner(port)
+            if owner.state in ("free", "unknown") or (owner.udid or "").upper() == mine:
+                if port != first:
+                    logger.info(
+                        f"Port {first} is held by {self._describe(await port_owner(first))}; "
+                        f"using port {port} for simulator {self._device_id}."
+                    )
+                self._port = port
+                return port
+            if configured:
+                raise RuntimeError(
+                    f"{WDA_PORT_ENV}={port} is held by {self._describe(owner)}, not simulator "
+                    f"{self._device_id}. Driving it would act on the wrong device. Unset "
+                    f"{WDA_PORT_ENV} to let Lunatap pick a free port, or stop that server."
+                )
+        raise RuntimeError(
+            f"No free WebDriverAgent port for simulator {self._device_id}: {first} and "
+            f"{', '.join(map(str, fallback_ports(mine)))} are all in use. Stop unused "
+            f"WebDriverAgent servers or set {WDA_PORT_ENV}."
+        )
+
+    @staticmethod
+    def _describe(owner: PortOwner) -> str:
+        if owner.state == "simulator":
+            return f"the WebDriverAgent of simulator {owner.udid}"
+        if owner.state == "other":
+            return f"another process ({owner.command.split()[0] if owner.command else '?'})"
+        return "another process"
 
     async def _verify_wda_device(self, candidate: dict[str, Any]) -> None:
         """The endpoint must be a simulator, and the one we selected.
@@ -163,13 +284,13 @@ class WdaSimulatorDriver(PhysicalIosDriver):
         return str(found) if found is not None else None
 
     def _xctest_env(self) -> dict[str, str]:
-        return {"TEST_RUNNER_USE_PORT": str(self._wda_port())}
+        return {"TEST_RUNNER_USE_PORT": str(self._port or self._wda_port())}
 
     async def _start_wda_server(self) -> None:
         xctestrun = self._xctestrun_path()
         if not xctestrun:
             raise RuntimeError(
-                f"No WebDriverAgent server answers on 127.0.0.1:{self._wda_port()} for "
+                f"No WebDriverAgent server answers on 127.0.0.1:{self._port or self._wda_port()} for "
                 f"simulator {self._device_id}. {_SIM_WDA_SETUP_HINT}"
             )
         await self._start_xctest_session(xctestrun)

@@ -40,6 +40,16 @@ def _clean_env(monkeypatch):
         monkeypatch.delenv(key, raising=False)
 
 
+@pytest.fixture(autouse=True)
+def _ports_free(monkeypatch):
+    """Keep port choice off the host: tests that need an owner patch it themselves."""
+
+    async def free(port):
+        return wda_simulator_driver.PortOwner("free")
+
+    monkeypatch.setattr(wda_simulator_driver, "port_owner", free)
+
+
 class _FakeWda:
     def __init__(self, name="iPhone 17 Pro", is_simulator=True):
         self.base_url = "http://127.0.0.1:8100"
