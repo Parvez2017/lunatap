@@ -14,6 +14,7 @@ uv run lunatap run "Open Settings, go to General > About, and report the iOS ver
 - [What you can do with it](#what-you-can-do-with-it)
 - [Install](#install)
 - [Examples](#examples)
+  - [Build and run your app](#build-and-run-your-app)
   - [1. Explore an app from your AI IDE](#1-explore-an-app-from-your-ai-ide)
   - [2. Reproduce a bug with logs and network evidence](#2-reproduce-a-bug-with-logs-and-network-evidence)
   - [3. Record a flow and replay it in CI](#3-record-a-flow-and-replay-it-in-ci)
@@ -32,6 +33,7 @@ uv run lunatap run "Open Settings, go to General > About, and report the iOS ver
 
 | You want to… | Use |
 |---|---|
+| Build your app from source and see the change on the simulator | `mobile_build` from your IDE, or `lunatap build --watch` to rebuild on every save |
 | Explore an app, reproduce a bug, or check a screen while your IDE agent steers | **Harness tools** over MCP: `mobile_observe`, `mobile_act`, `mobile_assert`, … (no LLM key needed in Lunatap) |
 | See why a step failed | `mobile_logs` (the app's unified log) and `mobile_net` (HTTP calls via mitmproxy), matched to each step |
 | Retest the same path on every build | `mobile_flow` records it; `lunatap flow run` replays it and fails CI on the first broken step |
@@ -95,6 +97,30 @@ The harness tools need no model key: your IDE's agent is the brain. The autonomo
 Find a simulator's UDID with `xcrun simctl list devices booted`. If only one simulator is booted, you can leave the UDID out everywhere.
 
 ## Examples
+
+### Build and run your app
+
+Point Lunatap at your app's folder and it builds the app for the simulator, installs it and launches it:
+
+```bash
+lunatap build ~/code/MyApp                  # finds the .xcworkspace or .xcodeproj and the scheme
+lunatap build ~/code/MyApp --watch          # rebuild and relaunch on every save
+lunatap build . --scheme Staging -d <UDID>  # pick the scheme and the simulator
+```
+
+From your IDE, the agent does the same with `mobile_build`, so it can fix code and check the result in one loop:
+
+> *Add a "Reset" button under the counter, build the app and check that it sets the count back to 0.*
+
+```python
+mobile_build(path="~/code/MyApp")            # build → install → start logs → launch
+# BUILD FAILED … ContentView.swift:17: cannot convert value of type 'String' to expected argument type 'Int'
+mobile_build(path="~/code/MyApp")            # after the fix: built in 2s, relaunched
+mobile_act(action="tap", target="Reset")
+mobile_assert(text="Tapped 0 times")
+```
+
+Errors come back as `file:line: message`, and builds go to `~/Library/Caches/lunatap/DerivedData`, so Xcode's own build folder is untouched. To try it without your own app, use the example in [`examples/HelloLunatap`](examples/HelloLunatap). Building for a real iPhone isn't supported yet.
 
 ### 1. Explore an app from your AI IDE
 

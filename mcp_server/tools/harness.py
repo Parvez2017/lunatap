@@ -14,6 +14,7 @@
 
 import asyncio
 
+from lunatap.harness import build as _build
 from lunatap.harness.session import DeviceBusy, HarnessSession
 from lunatap.mcp.device_controllers import get_controller as _get_controller
 from mcp_server.base import mcp
@@ -445,6 +446,57 @@ async def mobile_walkthrough(
                 return "Error: give `text`, after at least one step."
             return f"Step {walk.steps[-1].number} is now: {walk.steps[-1].caption}"
         return "Error: action must be start, caption, stop or status."
+    except DeviceBusy as exc:
+        return f"Error: device busy: {exc}"
+    except _ERRORS as exc:
+        return _explain(exc)
+
+
+@mcp.tool()
+async def mobile_build(
+    path: str = ".",
+    scheme: str | None = None,
+    configuration: str = "Debug",
+    device_serial: str | None = None,
+    launch: bool = True,
+    logs: bool = True,
+) -> str:
+    """Build the app from source for a simulator, install it and launch it.
+
+    `path` is the app's folder, `.xcodeproj` or `.xcworkspace` (a workspace
+    wins when a folder has both). `scheme` may be left out when the project
+    has one scheme or one named after it. The simulator is `device_serial`,
+    else the only booted one; real iPhones are not supported yet. A failed
+    build returns the compiler errors as `file:line: message` and the log
+    path; fix them and call again. On success the app is installed and
+    relaunched, and with `logs=true` its log capture starts before launch,
+    so `mobile_logs(action="read")` shows startup too. Then `mobile_observe`.
+    Builds go to ~/Library/Caches/lunatap/DerivedData, so your Xcode's own
+    DerivedData is untouched; an incremental rebuild takes seconds.
+    """
+    try:
+        project = _build.find_project(path)
+        sim = await _build.resolve_simulator(device_serial)
+        udid = str(sim["udid"])
+        chosen = await _build.choose_scheme(project, scheme)
+        result = await _build.build(project, chosen, udid, configuration)
+        if not result.ok or result.app_path is None or result.bundle_id is None:
+            return result.describe()
+        lines = [result.describe()]
+        if launch and logs:
+            session = await _get_session(udid)
+            lines.append("Logs: " + await session.start_logs(bundle_id=result.bundle_id))
+        lines.append(
+            (
+                await _build.install_and_launch(
+                    udid, result.app_path, result.bundle_id, launch=launch
+                )
+            ).rstrip(".")
+            + f" on {sim.get('name')} ({udid})."
+        )
+        if launch:
+            lines.append("Next: mobile_observe() to see it.")
+        return "\n".join(lines)
     except DeviceBusy as exc:
         return f"Error: device busy: {exc}"
     except _ERRORS as exc:

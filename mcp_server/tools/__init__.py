@@ -19,6 +19,7 @@ from mcp_server.tools.diagnose import mobile_diagnose
 from mcp_server.tools.harness import (
     mobile_act,
     mobile_assert,
+    mobile_build,
     mobile_do_step,
     mobile_flow,
     mobile_logs,
@@ -40,6 +41,7 @@ __all__ = [
     "mobile_observe",
     "mobile_act",
     "mobile_assert",
+    "mobile_build",
     "mobile_do_step",
     "mobile_flow",
     "mobile_logs",

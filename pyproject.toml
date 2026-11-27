@@ -169,6 +169,9 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 ban-relative-imports = "all"
 
 [tool.ruff.format]
+# Markdown code blocks are hand-aligned examples (see README.md); leave them alone.
+exclude = ["*.md"]
+
 # Like Black, use double quotes for strings.
 quote-style = "double"
 

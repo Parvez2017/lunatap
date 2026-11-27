@@ -30,6 +30,7 @@ from lunatap.interfaces.cli.commands.server_lifecycle import (
     status_command,
     stop_command,
 )
+from lunatap.interfaces.cli.commands.build import build_command
 from lunatap.interfaces.cli.commands.flow import flow_app
 from lunatap.interfaces.cli.commands.trace import trace_app
 from lunatap.interfaces.cli.commands.ui import ui_command
@@ -66,6 +67,9 @@ app.command(name="batch", help="Execute a batch sequence of automation tasks.")(
 app.command(name="mcp", help="Start the Artemis Model Context Protocol (MCP) server.")(mcp_command)
 app.add_typer(server_app, name="server", help="Cloud Run proxy and web dashboard server.")
 app.add_typer(trace_app, name="trace", help="Inspect and query execution traces.")
+app.command(
+    name="build", help="Build an Xcode app for a simulator, install and launch it (--watch)."
+)(build_command)
 app.add_typer(flow_app, name="flow", help="Replay saved harness flows (record-and-replay QA).")
 
 
